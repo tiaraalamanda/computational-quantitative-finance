@@ -1,0 +1,82 @@
+---
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+  word_document: default
+---
+---
+title: "Proyek Individual 2 - Kompstat (A)"
+author: "Tiara Alamanda"
+date: "14/01/2021"
+output: html_document
+---
+
+## Soal 1: Hitunglah integral fungsi *f(x)=sin(x)^2* pd domain x selang [0,pi]
+```{r}
+#Menghitung Integral secara 'langsung'
+integrate(function(x)sin(x)^2, lower=0, upper=pi)
+#Menaksir Integral degan Monte Carlo
+monte_int<-function(f, a, b, n=1e6){ #1e6 adlh 1jt=10^6
+  x<-runif(n, min=a, max=b)
+  return((b-a)*sum(f(x))/n)
+}
+monte_int(function(x)sin(x)^2, a=0, b=pi)
+```
+
+## Soal 2: Memprediksi  pergerakan Saham Aneka Tambang Tbk PT (ANTM) selama 100 hari kedepan (Minimal 1000 simulasi)
+```{r}
+library(readr)
+ANTM <- read.csv("ANTM.JK.csv")
+View(ANTM)
+ANTM = ANTM[,-1] #yang digunakan hanya kolom tambahan yaitu kolom H "Return" dengan perhitungan Return=Ln(Adj Close Hari ini/Adj Close Kemarin)
+#Mean hitung excel: 1+0.001227556 = 1.001227556
+#SD hitung excel: 0.03100741
+
+library(dplyr)
+Return= (select(ANTM,7))
+summary(Return)
+mean=colMeans(Return)
+mean #Hasil R akan NA, maka digunakanlah Mean hasil hitung Excel
+sd=sapply(Return,sd)
+sd #Hasil R akan NA, maka digunakanlah Mean hasil hitung Excel
+
+## Single Path
+days <- 100
+changes <- rnorm(days,mean=1.001227556,sd=0.03100741)
+plot(cumprod(c(3300,changes)),type='l',ylab="Price",xlab="day", main="ANTM closing price (Single Path)") #3300 adalah harga open ANTM per lembar pada 15/01/2021
+
+## Simulasi 1000 path
+runs <- 1000
+#simulates future movements and returns the closing price on day 200
+generate.path <- function(){
+  days <- 100
+  changes <- rnorm(100,mean=1.001227556,sd=0.03100741)
+  sample.path <- cumprod(c(3300,changes))
+  closing.price <- sample.path[days+1] #+1 because we add the opening price
+  return(closing.price)
+}
+
+mc.closing <- replicate(runs,generate.path())
+median(mc.closing) #Rp 3633.685
+mean(mc.closing) #Rp 3784.257
+quantile(mc.closing, 0.95) #Rp 6068.015 #batas atas diambil di 95%
+quantile(mc.closing, 0.05) #Rp 2184.885 #batas atas diambil di 5%
+
+## Simulasi 10000 path
+runs <- 10000
+#simulates future movements and returns the closing price on day 200
+generate.path <- function(){
+  days <- 100
+  changes <- rnorm(100,mean=1.001227556,sd=0.03100741)
+  sample.path <- cumprod(c(3300,changes))
+  closing.price <- sample.path[days+1] #+1 because we add the opening price
+  return(closing.price)
+}
+
+mc.closing <- replicate(runs,generate.path())
+median(mc.closing) #Rp 3561.527
+mean(mc.closing) #Rp 3723.731
+quantile(mc.closing, 0.95) #Rp 5900.938 #batas atas diambil di 95%
+quantile(mc.closing, 0.05) #Rp 2140.94 #batas atas diambil di 5%
+```
